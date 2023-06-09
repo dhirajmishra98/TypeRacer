@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const http = require("http");
 const Game = require("./models/game.js");
 const getSentence = require("./apis/getSentence.js");
+const { time } = require("console");
 
 //Creating server
 const app = express();
@@ -15,29 +16,116 @@ var io = require("socket.io")(server);
 app.use(express.json());
 
 //listening to socket io events from client (flutter code)
-io.on("connection", (socket)=>{
-    console.log(socket.id);
-    socket.on("createGame", async ({nickname})=>{
-      try{
-        let game = Game();
-        let sentence = await getSentence();
-        let player = {
-          socketID : socket.id,
-          nickname,
-          isPartyLeader : true,
-        }
-        game.words = sentence;
-        game.players.push(player);
-        game = await game.save();
+io.on("connection", (socket) => {
+  socket.on("createGame", async ({ nickname }) => {
+    try {
+      let game = Game();
+      let sentence = await getSentence();
+      let player = {
+        socketID: socket.id,
+        nickname,
+        isPartyLeader: true,
+      };
+      game.words = sentence;
+      game.players.push(player);
+      game = await game.save();
 
-        const gameId = game._id.toString();
-        socket.join(gameId);
-        io.to(gameId).emit("updateGame", game);
-      }catch(e){
-        console.log(e);
+      const gameId = game._id.toString();
+      socket.join(gameId);
+      io.to(gameId).emit("updateGame", game);
+    } catch (e) {
+      console.log(e);
+    }
+  });
+
+  socket.on("joinGame", async ({ nickname, gameId }) => {
+    try {
+      if (!gameId.match(/^[0-9a-fA-F]{24}$/)) {
+        socket.emit("notCorrectGame", "Please enter a valid gameID");
+        return;
       }
-    });
+
+      let game = await Game.findById(gameId);
+      if (game.isJoin) {
+        const id = game._id.toString();
+        let player = {
+          nickname,
+          socketID: socket.id,
+        };
+        game.players.push(player);
+        socket.join(gameId);
+        game = await game.save();
+        io.to(gameId).emit("updateGame", game);
+      } else {
+        socket.emit(
+          "notCorrectGame",
+          "The game is in progress, Please try again later!"
+        );
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
+
+  socket.on("timer", async ({ playerId, gameId }) => {
+    try {
+      console.log("timer started");
+      let countDown = 5;
+      let game = await Game.findById(gameId);
+      let player = game.players.id(playerId);
+      if (player.isPartyLeader) {
+        let timerId = setInterval(async () => {
+          if (countDown >= 0) {
+            io.to(gameId).emit("timer", {
+              countDown,
+              msg: "Game Starting...",
+            });
+            countDown--;
+          } else {
+            game.isJoin = false;
+            game = await game.save();
+            io.to(gameId).emit("updateGame", game);
+            startGameClock(gameId);
+            clearInterval(timerId);
+          }
+        }, 1000);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
 });
+
+//functions needed to be executed in server
+const startGameClock = async (gameId) => {
+  let game = await Game.findById(gameId);
+  game.startTimer = new Date().getTime();
+  game = await game.save();
+
+  let time = 120; //later manually setup its 120sec now
+  let timerId = setInterval(
+    (function gameIntervalFunc() {
+      if (time >= 0) {
+        const timeFormat = calculateTime(time);
+        io.to(gameId).emit("timer", {
+          countDown: time,
+          msg: "Time Remaining...",
+        });
+        console.log(time);
+        time--;
+      }
+      return gameIntervalFunc;
+    })(),
+    1000
+  );
+};
+
+const calculateTime = (time) => {
+  let min = Math.floor(time / 60);
+  let sec = time % 60;
+
+  return `${min}:${sec < 10 ? "0" + sec : sec}`;
+};
 
 //Connect to MongoDB
 const DB =
@@ -55,11 +143,6 @@ mongoose
 server.listen(port, "0.0.0.0", () => {
   console.log(`server started and running on ${port}`);
 });
-
-
-
-
-
 
 //Useful comments
 //dependencies : for product after deployment, command : npm i <package name>

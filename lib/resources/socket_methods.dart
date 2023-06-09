@@ -4,6 +4,7 @@ import 'package:socket_io_client/socket_io_client.dart';
 import 'package:typeracer/provider/game_state_provider.dart';
 import 'package:typeracer/resources/socket_client.dart';
 import 'package:typeracer/screens/game_screen.dart';
+import 'package:typeracer/widgets/snackbar.dart';
 
 class SocketMethods {
   final _socketClient = SocketClient.instance.socket!;
@@ -19,9 +20,26 @@ class SocketMethods {
     }
   }
 
+  void joinGame(String nickname, String gameId) {
+    if (nickname.isNotEmpty && gameId.isNotEmpty) {
+      _socketClient.emit("joinGame", {
+        'nickname': nickname,
+        'gameId': gameId,
+      });
+    }
+  }
+
+  void startTimer(String playerId, String gameId) {
+    _socketClient.emit("timer", {
+      'playerId': playerId,
+      'gameId': gameId,
+    });
+  }
+
   //Listeners
   void updateGameListener(BuildContext context) {
     _socketClient.on("updateGame", (data) {
+      // ignore: unused_local_variable
       final gameStateProvider =
           Provider.of<GameStateProvider>(context, listen: false)
               .updateGameState(
@@ -37,4 +55,13 @@ class SocketMethods {
       }
     });
   }
+
+  void notCorrectGameListener(BuildContext context) {
+    _socketClient.on("notCorrectGame", (data) {
+      print(data);
+      showSnackBar(context, data);
+    });
+  }
+
+  void updateTimerListener(BuildContext context){}
 }

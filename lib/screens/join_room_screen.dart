@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:typeracer/resources/socket_methods.dart';
 import 'package:typeracer/widgets/custom_button.dart';
 
 import '../responsive/responsive.dart';
@@ -15,6 +16,14 @@ class JoinRoomScreen extends StatefulWidget {
 class _JoinRoomScreenState extends State<JoinRoomScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _gameIdController = TextEditingController();
+  final SocketMethods _socketMethods = SocketMethods();
+
+  @override
+  void initState() {
+    super.initState();
+    _socketMethods.updateGameListener(context);
+    _socketMethods.notCorrectGameListener(context);
+  }
 
   @override
   void dispose() {
@@ -59,7 +68,8 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
               ),
               CustomButton(
                 text: 'Join',
-                onTap: () {},
+                onTap: () => _socketMethods.joinGame(
+                    _nameController.text.trim(), _gameIdController.text),
               ),
             ],
           ),

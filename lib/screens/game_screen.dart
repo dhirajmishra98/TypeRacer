@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:typeracer/widgets/game_textfield.dart';
 
 class GameScreen extends StatelessWidget {
   static const String routeName = '/game-screen';
@@ -7,8 +8,12 @@ class GameScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: const Center(
         child: Text("Game Screen"),
+      ),
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.all(15),
+        child: const GameTextField(),
       ),
     );
   }
