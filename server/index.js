@@ -67,6 +67,28 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("userInput", async({userInput, gameId})=>{
+    let game = await Game.findById(gameId);
+    if(!game.isJoin && !game.isOver){
+      let player = game.players.find((playerr)=> playerr.socketID === socket.id);
+
+      if(game.words[player.currentWordIndex] === userInput.trim()){
+        player.currentWordIndex = player.currentWordIndex+1;
+        if(player.currentWordIndex !== game.words.length){
+          game = await game.save();
+          io.to(gameId).emit("updateGame",game);
+        }else{
+          let endTime = new Date().getTime();
+          let {startTimer} = game;
+          player.WPM = calculateWPM(startTimer, endTime, player);
+          game = await game.save();
+          socket.emit("done");
+          io.to(gameId).emit("updateGame",game);
+        }
+      }
+    }
+  });
+
   socket.on("timer", async ({ playerId, gameId }) => {
     try {
       console.log("timer started");
@@ -108,11 +130,30 @@ const startGameClock = async (gameId) => {
       if (time >= 0) {
         const timeFormat = calculateTime(time);
         io.to(gameId).emit("timer", {
-          countDown: time,
+          countDown: timeFormat,
           msg: "Time Remaining...",
         });
         console.log(time);
         time--;
+      }else{
+        (async ()=>{
+          try{
+          let endTime = new Date().getTime();
+          let game = await Game.findById(gameId);
+          let {startTimer} = game;
+          game.isOver  = true;
+          game.players.forEach((player,index)=>{
+            if(player.WPM === -1){
+              game.players[index].WPM = calculateWPM(startTimer,endTime,player);
+            }
+          });
+          game = await game.save();
+          io.to(gameId).emit("updateGame",game);
+          clearInterval(timerId);
+          } catch (e){
+            console.log(e);
+          }
+        })();
       }
       return gameIntervalFunc;
     })(),
@@ -126,6 +167,13 @@ const calculateTime = (time) => {
 
   return `${min}:${sec < 10 ? "0" + sec : sec}`;
 };
+
+const calculateWPM = (startTimer, endTime, player) => {
+  const timeTakenInSec = (endTime-startTimer)/1000;
+  const timeTakenInMin = timeTakenInSec/60;
+  const WPM = Math.floor(player.currentWordIndex/timeTakenInMin);
+  return WPM;
+}
 
 //Connect to MongoDB
 const DB =

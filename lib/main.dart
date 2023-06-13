@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:typeracer/provider/client_state_provider.dart';
 import 'package:typeracer/provider/game_state_provider.dart';
 import 'package:typeracer/screens/create_room_screen.dart';
 import 'package:typeracer/screens/game_screen.dart';
 import 'package:typeracer/screens/home_page_screen.dart';
 import 'package:typeracer/screens/join_room_screen.dart';
+import 'package:typeracer/screens/waiting_lobby.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,6 +23,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => GameStateProvider(),
         ),
+        ChangeNotifierProvider(
+          create: (context) => ClientStateProvider(),
+        ),
       ],
       child: MaterialApp(
         title: 'TypeRacer',
@@ -35,6 +40,7 @@ class MyApp extends StatelessWidget {
           JoinRoomScreen.routeName: (context) => const JoinRoomScreen(),
           HomePageScreen.routeName: (context) => const HomePageScreen(),
           GameScreen.routeName: (context) => const GameScreen(),
+          WaitingLobby.routeName :(context) => const WaitingLobby(),
         },
       ),
     );

@@ -27,8 +27,9 @@ class HomePageScreen extends StatelessWidget {
               children: [
                 CustomButton(
                   text: "Create",
-                  onTap: () =>
-                      Navigator.pushNamed(context, CreateRoomScreen.routeName),
+                  onTap: () {
+                    Navigator.pushNamed(context, CreateRoomScreen.routeName);
+                  },
                   isHome: true,
                 ),
                 CustomButton(
