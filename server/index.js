@@ -177,7 +177,7 @@ const calculateWPM = (startTimer, endTime, player) => {
 }
 
 //Connect to MongoDB
-const DB = mongoUrl;
+const DB = process.env.mongoUrl;
 mongoose
   .connect(DB)
   .then(() => {
