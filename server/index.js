@@ -1,4 +1,5 @@
 //Imports
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const http = require("http");
@@ -176,8 +177,7 @@ const calculateWPM = (startTimer, endTime, player) => {
 }
 
 //Connect to MongoDB
-const DB =
-  "mongodb+srv://gobindmishra22:9811266945dhiraj@typeracer.injgfbz.mongodb.net/?retryWrites=true&w=majority";
+const DB = mongoUrl;
 mongoose
   .connect(DB)
   .then(() => {
